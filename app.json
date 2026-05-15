@@ -1,4 +1,7 @@
 {
-  "name": "A1Clean",
-  "displayName": "A1Clean"
+  "expo": {
+    "name": "A1Clean",
+    "slug": "a1clean",
+    "version": "1.0.0"
+  }
 }
