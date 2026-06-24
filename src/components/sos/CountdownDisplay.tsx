@@ -50,7 +50,7 @@ export const CountdownDisplay: React.FC<CountdownDisplayProps> = ({
 
   if (variant === 'minimal') {
     return (
-      <View style={[styles.minimalContainer, containerStyle]}>
+      <View style={[styles.minimalContainer, containerStyle]} accessible accessibilityRole="timer" accessibilityLabel={`${remainingSeconds} seconds remaining`}>
         <Text style={styles.minimalText}>{remainingSeconds}s</Text>
       </View>
     );
@@ -58,7 +58,7 @@ export const CountdownDisplay: React.FC<CountdownDisplayProps> = ({
 
   if (variant === 'compact') {
     return (
-      <View style={[styles.compactContainer, containerStyle]}>
+      <View style={[styles.compactContainer, containerStyle]} accessible accessibilityRole="timer" accessibilityLabel={`${remainingSeconds} seconds remaining in SOS countdown`}>
         <View style={styles.compactProgress}>
           <Animated.View
             style={[
@@ -77,7 +77,7 @@ export const CountdownDisplay: React.FC<CountdownDisplayProps> = ({
 
   // Detailed variant (default)
   return (
-    <View style={[styles.detailedContainer, containerStyle]}>
+    <View style={[styles.detailedContainer, containerStyle]} accessible accessibilityRole="timer" accessibilityLabel={`${remainingSeconds} seconds remaining in SOS countdown`}>
       <View style={styles.timerCircle}>
         <Text style={styles.timerText}>{remainingSeconds}</Text>
         <Text style={styles.timerLabel}>seconds</Text>

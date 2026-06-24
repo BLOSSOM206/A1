@@ -46,6 +46,30 @@ test('navigates from login to signup and back', async () => {
   });
 
   const root = renderer!.root;
+  const continueToNeeds = await waitForProps(root, {
+    accessibilityLabel: 'Continue to accessibility needs',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    continueToNeeds.props.onPress();
+  });
+
+  const continueToPreferences = await waitForProps(root, {
+    accessibilityLabel: 'Continue to preferences',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    continueToPreferences.props.onPress();
+  });
+
+  const finishOnboarding = await waitForProps(root, {
+    accessibilityLabel: 'Finish accessibility onboarding',
+  });
+
+  await ReactTestRenderer.act(async () => {
+    await finishOnboarding.props.onPress();
+  });
+
   const createAccountButton = await waitForProps(root, {
     accessibilityLabel: 'Go to sign up',
   });

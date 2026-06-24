@@ -4,7 +4,7 @@
  */
 
 import { LocationSnapshot } from '../../types/Emergency';
-import { RETRY_CONFIG, STORAGE_KEYS } from '../../constants/sosConfig';
+import { STORAGE_KEYS } from '../../constants/sosConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 

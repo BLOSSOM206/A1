@@ -1,14 +1,20 @@
 import React, { useCallback, useMemo } from 'react';
-import { ActivityIndicator, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, Text } from 'react-native';
 import { DarkTheme, DefaultTheme, NavigationContainer, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAccessibility } from '../context/AccessibilityContext';
 import { useEmergencyProfile } from '../context/EmergencyProfileContext';
 import { useUser } from '../context/UserContext';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { SignupScreen } from '../screens/auth/SignupScreen';
+import {
+  AccessibilityNeedsScreen,
+  AccessibilityPreferencesScreen,
+  AccessibilityWelcomeScreen,
+} from '../screens/onboarding/AccessibilityOnboardingScreens';
 import { HomeScreen } from '../screens/HomeScreen';
 import { EmergencyProfileSetupScreen } from '../screens/emergency/EmergencyProfileSetupScreen';
 import { TestScreen } from '../screens/TestScreen';
@@ -28,6 +34,12 @@ type AuthStackParamList = {
   Signup: undefined;
 };
 
+type AccessibilityOnboardingStackParamList = {
+  Welcome: undefined;
+  Needs: undefined;
+  Preferences: undefined;
+};
+
 type HomeStackParamList = {
   Home: undefined;
 };
@@ -44,10 +56,10 @@ type SimpleStackParamList = {
 };
 
 type AppNavigatorProps = {
-  loading?: boolean;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const AccessibilityOnboardingStack = createNativeStackNavigator<AccessibilityOnboardingStackParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const RestaurantsStack = createNativeStackNavigator<RestaurantsStackParamList>();
 const SOSStack = createNativeStackNavigator<SimpleStackParamList>();
@@ -155,7 +167,7 @@ function BookingRouteScreen({ route, navigation }: { route: { params: { restaura
           const saved = await addBooking(booking);
           console.log('[AppNavigator] booking saved', saved?.id);
           navigation.navigate('Success', { booking: saved });
-        } catch (e) {
+        } catch {
           navigation.navigate('Success', { booking });
         }
       }}
@@ -188,6 +200,7 @@ function ProfileTabScreen({ navigation }: { navigation: any }) {
 function MainTabs() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { minTouchTarget, preferences, speak, textScale } = useAccessibility();
 
   return (
     <Tabs.Navigator
@@ -199,14 +212,19 @@ function MainTabs() {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
           borderTopWidth: theme.isHighContrast ? 2 : 1,
-          height: 64 + insets.bottom,
-          paddingBottom: 8 + insets.bottom,
+          height: (preferences.oneHandedNavigation ? 76 : 64) + insets.bottom,
+          paddingBottom: (preferences.oneHandedNavigation ? 16 : 8) + insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 12 * textScale,
           fontWeight: '700',
         },
+        tabBarItemStyle: {
+          minHeight: minTouchTarget,
+        },
+        tabBarAccessibilityLabel: `${route.name === 'Bookings' ? 'My Bookings' : route.name} tab`,
+        tabBarButtonTestID: `${route.name.toLowerCase()}-tab`,
         tabBarIcon: ({ color, size, focused }) => {
           const icons: Record<string, string> = {
             Home: 'home-outline',
@@ -226,6 +244,17 @@ function MainTabs() {
           );
         },
       })}
+      screenListeners={({ route }) => ({
+        tabPress: () => {
+          if (preferences.autoReadScreens) {
+            const tabName = route.name === 'Bookings' ? 'My Bookings' : route.name;
+            speak(`${tabName} tab selected.`, {
+              key: `tab:${route.name}`,
+              minRepeatMs: 2000,
+            }).catch(() => undefined);
+          }
+        },
+      })}
     >
       <Tabs.Screen name="Home" component={HomeStackScreen} />
       <Tabs.Screen name="Restaurants" component={RestaurantsStackScreen} />
@@ -234,6 +263,18 @@ function MainTabs() {
       <Tabs.Screen name="Notes" component={NotesStackScreen} />
       <Tabs.Screen name="Profile" component={ProfileStackScreen} />
     </Tabs.Navigator>
+  );
+}
+
+function AccessibilityOnboardingNavigator() {
+  const { theme } = useTheme();
+
+  return (
+    <AccessibilityOnboardingStack.Navigator screenOptions={{ ...createScreenOptions(theme), headerShown: false }}>
+      <AccessibilityOnboardingStack.Screen name="Welcome" component={AccessibilityWelcomeScreen} />
+      <AccessibilityOnboardingStack.Screen name="Needs" component={AccessibilityNeedsScreen} />
+      <AccessibilityOnboardingStack.Screen name="Preferences" component={AccessibilityPreferencesScreen} />
+    </AccessibilityOnboardingStack.Navigator>
   );
 }
 
@@ -336,11 +377,10 @@ function AuthNavigator() {
   );
 }
 
-export function AppNavigator({ loading = false }: AppNavigatorProps) {
-  const { isLoading: authLoading, isSignedIn } = useUser();
-  const { isLoading: profileLoading } = useEmergencyProfile();
+export function AppNavigator(_: AppNavigatorProps) {
+  const { isSignedIn } = useUser();
+  const { onboardingComplete } = useAccessibility();
   const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
   const navigationTheme = useMemo(
     () => {
       const baseTheme = theme.mode === 'dark' ? DarkTheme : DefaultTheme;
@@ -362,17 +402,9 @@ export function AppNavigator({ loading = false }: AppNavigatorProps) {
     [theme],
   );
 
-  if (loading || authLoading || profileLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <NavigationContainer theme={navigationTheme}>
-      {isSignedIn ? <MainTabs /> : <AuthNavigator />}
+      {!onboardingComplete ? <AccessibilityOnboardingNavigator /> : isSignedIn ? <MainTabs /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }

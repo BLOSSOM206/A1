@@ -21,14 +21,19 @@ export const BookingCard: React.FC<Props> = ({ booking, onArrive }) => {
       const msg = 'Restaurant notified — status set to Arrived.';
       if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.SHORT);
       else Alert.alert('Arrived', msg);
-    } catch (e) {
+    } catch {
       setDisabled(false);
       Alert.alert('Error', 'Could not confirm arrival.');
     }
   };
 
   return (
-    <View style={styles.card} accessible accessibilityLabel={`Booking for ${booking.restaurantName} on ${booking.date} at ${booking.time}`}>
+    <View
+      style={styles.card}
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={`Booking for ${booking.restaurantName} on ${booking.date} at ${booking.time}. Guests: ${booking.guests}. Status: ${booking.status ?? 'Confirmed'}.`}
+    >
       <View style={styles.row}>
         {booking.restaurant?.images?.[0] ? (
           <Image source={{ uri: booking.restaurant.images[0] }} style={styles.image} />
@@ -50,6 +55,7 @@ export const BookingCard: React.FC<Props> = ({ booking, onArrive }) => {
         accessibilityRole="button"
         accessibilityState={{ disabled }}
         accessibilityLabel={disabled ? 'Arrival confirmed' : 'I am here - notify restaurant'}
+        accessibilityHint={disabled ? 'The restaurant has already been notified' : 'Tell the restaurant you have arrived for this booking'}
         disabled={disabled}
       >
         <Text style={styles.arriveText}>{disabled ? 'Arrived' : 'I Am Here'}</Text>

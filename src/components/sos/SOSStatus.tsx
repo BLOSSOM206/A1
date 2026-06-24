@@ -198,6 +198,7 @@ export const SOSStatus: React.FC<SOSStatusProps> = ({
           onPress={onCancel}
           accessibilityRole="button"
           accessibilityLabel="Cancel SOS alert"
+          accessibilityHint="Stop the active emergency countdown or alert sequence if it is safe to cancel"
         >
           <Text style={styles.cancelButtonText}>Cancel SOS</Text>
         </Pressable>

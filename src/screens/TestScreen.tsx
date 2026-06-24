@@ -5,6 +5,8 @@ import { RestaurantCard } from "../components/Restaurant/RestaurantCards";
 import { Restaurant } from "../types/Restaurant";
 import { curatedRestaurants } from "../../data/restaurants";
 import { AppTheme, useTheme } from "../theme";
+import { useAccessibility } from "../context/AccessibilityContext";
+import { useScreenNarration } from "../hooks/useScreenNarration";
 
 
 
@@ -84,6 +86,7 @@ type TestScreenProps = {
 
 export const TestScreen: React.FC<TestScreenProps> = ({ onRestaurantPress }) => {
     const { theme } = useTheme();
+    const { preferences, queueSpeech } = useAccessibility();
     const styles = useMemo(() => createStyles(theme), [theme]);
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
@@ -102,6 +105,22 @@ export const TestScreen: React.FC<TestScreenProps> = ({ onRestaurantPress }) => 
         () => filterRestaurants(restaurants, searchText, selectedFilters, null),
         [restaurants, searchText, selectedFilters]
     );
+    const selectedFilterLabels = useMemo(
+        () => FILTER_OPTIONS.filter((filter) => selectedFilters.includes(filter.id)).map((filter) => filter.label),
+        [selectedFilters]
+    );
+
+    useScreenNarration({
+        title: "Restaurants",
+        description: [
+            "Browse accessible restaurants.",
+            selectedFilterLabels.length > 0
+                ? `Selected accessibility filters are ${selectedFilterLabels.join(", ")}.`
+                : "No accessibility filters are selected.",
+            `${filteredRestaurants.length} restaurant${filteredRestaurants.length === 1 ? "" : "s"} found.`,
+        ],
+        enabled: !loading,
+    });
 
     useEffect(() => {
         setRestaurants(staticRestaurants);
@@ -119,6 +138,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({ onRestaurantPress }) => 
                     style={styles.searchBar}
                     accessibilityLabel="Search restaurants"
                     accessibilityHint="Type a restaurant name, location, or cuisine"
+                    accessibilityRole="search"
                 />
             </View>
 
@@ -156,6 +176,11 @@ export const TestScreen: React.FC<TestScreenProps> = ({ onRestaurantPress }) => 
                     renderItem={({ item }) => (
                         <RestaurantCard
                             restaurant={item}
+                            onFocusNarration={(text) => {
+                                if (preferences.autoReadScreens) {
+                                    queueSpeech(text, { key: `restaurant-card:${item.id}`, minRepeatMs: 8000 });
+                                }
+                            }}
                             onPress={() => {
                                 onRestaurantPress?.(item);
                             }}

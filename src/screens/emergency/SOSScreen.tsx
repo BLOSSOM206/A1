@@ -3,7 +3,7 @@
  * Main screen with large SOS button and emergency sequence UI
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Pressable,
   View,
@@ -21,6 +21,8 @@ import { useSOS } from '../../hooks/emergency/useSOS';
 import { useEmergencyProfile } from '../../context/EmergencyProfileContext';
 import { SOS_CONFIG } from '../../constants/sosConfig';
 import { AppTheme, useTheme } from '../../theme';
+import { useAccessibility } from '../../context/AccessibilityContext';
+import { useScreenNarration } from '../../hooks/useScreenNarration';
 
 type SOSScreenProps = {
   onBack?: () => void;
@@ -28,11 +30,14 @@ type SOSScreenProps = {
 
 export const SOSScreen: React.FC<SOSScreenProps> = ({ onBack }) => {
   const { theme } = useTheme();
+  const { speak } = useAccessibility();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { profile, isLoading, contacts } = useEmergencyProfile();
   const sos = useSOS({ profile });
   const allergies = profile?.medicalInfo?.allergies || profile?.allergies || [];
   const conditions = profile?.medicalInfo?.conditions || profile?.medicalConditions || [];
+  const lastCountdownAnnouncementRef = useRef<number | null>(null);
+  const lastStatusRef = useRef('idle');
 
   // Check if profile is complete
   useEffect(() => {
@@ -47,6 +52,59 @@ export const SOSScreen: React.FC<SOSScreenProps> = ({ onBack }) => {
   }, [sos.isProfileValid, sos.profileValidationError, isLoading]);
 
   const sosCountdownTotalSeconds = Math.ceil(SOS_CONFIG.COUNTDOWN_DURATION_MS / 1000);
+  const sosStatus = sos.error ? 'error' : sos.isCalling ? 'calling' : sos.isCountingDown ? 'counting' : 'idle';
+
+  useScreenNarration({
+    title: 'Emergency SOS',
+    description: [
+      sos.isProfileValid
+        ? 'Emergency profile is ready.'
+        : `Profile incomplete. ${sos.profileValidationError || 'Complete your emergency profile to enable SOS.'}`,
+      'Tap the SOS button to start a countdown. Tap again to cancel if needed.',
+      `The countdown is ${sosCountdownTotalSeconds} seconds.`,
+      profile ? `${contacts.length} emergency contact${contacts.length === 1 ? '' : 's'} configured.` : '',
+    ],
+    enabled: !isLoading,
+  });
+
+  useEffect(() => {
+    if (sosStatus === lastStatusRef.current) {
+      return;
+    }
+
+    lastStatusRef.current = sosStatus;
+
+    if (sosStatus === 'calling') {
+      speak('Emergency call is being prepared.', { force: true, key: 'sos-calling', minRepeatMs: 15000 }).catch(() => undefined);
+    } else if (sosStatus === 'error') {
+      speak(`SOS error. ${sos.error}`, { force: true, key: 'sos-error', minRepeatMs: 15000 }).catch(() => undefined);
+    } else if (sosStatus === 'idle') {
+      lastCountdownAnnouncementRef.current = null;
+    }
+  }, [sos.error, sosStatus, speak]);
+
+  useEffect(() => {
+    if (!sos.isCountingDown) {
+      lastCountdownAnnouncementRef.current = null;
+      return;
+    }
+
+    const shouldAnnounce =
+      sos.remainingSeconds === sosCountdownTotalSeconds ||
+      sos.remainingSeconds === 3 ||
+      sos.remainingSeconds === 1;
+
+    if (!shouldAnnounce || lastCountdownAnnouncementRef.current === sos.remainingSeconds) {
+      return;
+    }
+
+    lastCountdownAnnouncementRef.current = sos.remainingSeconds;
+    speak(`${sos.remainingSeconds} second${sos.remainingSeconds === 1 ? '' : 's'} remaining.`, {
+      force: true,
+      key: `sos-countdown-${sos.remainingSeconds}`,
+      minRepeatMs: 10000,
+    }).catch(() => undefined);
+  }, [sos.isCountingDown, sos.remainingSeconds, sosCountdownTotalSeconds, speak]);
 
   if (isLoading) {
     return (
@@ -72,6 +130,7 @@ export const SOSScreen: React.FC<SOSScreenProps> = ({ onBack }) => {
             onPress={onBack}
             accessibilityRole="button"
             accessibilityLabel="Back to home"
+            accessibilityHint="Leave the emergency SOS screen"
           >
             <Text style={styles.backButtonText}>Back</Text>
           </Pressable>
@@ -257,7 +316,7 @@ export const SOSScreen: React.FC<SOSScreenProps> = ({ onBack }) => {
   );
 };
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
+const createStyles = (_theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',

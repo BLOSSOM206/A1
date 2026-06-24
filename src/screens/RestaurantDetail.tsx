@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Restaurant, RestaurantReview } from "../types/Restaurant";
 import { AppTheme, useTheme } from "../theme";
+import { useScreenNarration } from "../hooks/useScreenNarration";
 
 type DetailTab = "about" | "photos" | "reviews";
 
@@ -47,6 +48,17 @@ export const RestaurantDetail: React.FC<RestaurantDetailProps> = ({ restaurant, 
 
     const menuItems = restaurant.menu || [];
     const activeImage = galleryImages[imageIndex] || restaurant.image;
+    const accessibilityFeatures = restaurant.features.map((feature) => feature.label).join(", ") || "No accessibility facilities listed";
+
+    useScreenNarration({
+        title: restaurant.name,
+        description: [
+            `Rating ${restaurant.rating} out of 5.`,
+            `Accessibility facilities include ${accessibilityFeatures}.`,
+            "Reservation is available from the Book Table button.",
+            restaurant.description,
+        ],
+    });
 
     useEffect(() => {
         setActiveTab("about");
@@ -456,6 +468,7 @@ export const RestaurantDetail: React.FC<RestaurantDetailProps> = ({ restaurant, 
                         onPress={() => setActiveTab(tab.id)}
                         accessibilityRole="button"
                         accessibilityLabel={`${tab.label} tab`}
+                        accessibilityHint={`Show ${tab.label.toLowerCase()} information for this restaurant`}
                         accessibilityState={{ selected: activeTab === tab.id }}
                     >
                         <Text style={[styles.tabText, activeTab === tab.id ? styles.tabTextActive : null]}>{tab.label}</Text>
@@ -510,6 +523,7 @@ export const RestaurantDetail: React.FC<RestaurantDetailProps> = ({ restaurant, 
                     onPress={handleBookTable}
                     accessibilityRole="button"
                     accessibilityLabel={`Book a table at ${restaurant.name}`}
+                    accessibilityHint="Open reservation details for this restaurant"
                 >
                     <Text style={styles.actionText}>Book Table</Text>
                 </TouchableOpacity>
@@ -519,6 +533,7 @@ export const RestaurantDetail: React.FC<RestaurantDetailProps> = ({ restaurant, 
                     onPress={handleDirections}
                     accessibilityRole="button"
                     accessibilityLabel={`Open directions to ${restaurant.name}`}
+                    accessibilityHint="Open this restaurant location in Google Maps"
                 >
                     <Text style={styles.actionText}>Directions</Text>
                 </TouchableOpacity>

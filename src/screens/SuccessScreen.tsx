@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Booking } from "../types/Booking";
 import { AppTheme, useTheme } from "../theme";
+import { useScreenNarration } from "../hooks/useScreenNarration";
 
 type SuccessScreenProps = {
   booking: Booking;
@@ -11,6 +12,15 @@ type SuccessScreenProps = {
 export const SuccessScreen: React.FC<SuccessScreenProps> = ({ booking, onDone }) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  useScreenNarration({
+    title: "Booking confirmed",
+    description: [
+      `Table booked successfully at ${booking.restaurantName}.`,
+      `${booking.date} at ${booking.time}.`,
+      `${booking.guests} guest${booking.guests > 1 ? "s" : ""}.`,
+      `Communication preference is ${booking.communicationPreference}.`,
+    ],
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -33,6 +43,7 @@ export const SuccessScreen: React.FC<SuccessScreenProps> = ({ booking, onDone })
         onPress={onDone}
         accessibilityRole="button"
         accessibilityLabel="Done"
+        accessibilityHint="Return to the Home tab"
       >
         <Text style={styles.doneButtonText}>Done</Text>
       </TouchableOpacity>

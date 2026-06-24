@@ -6,6 +6,7 @@ import { AppTheme, useTheme } from "../../theme";
 interface RestaurantCardProps {
     restaurant: Restaurant;
     onPress?: () => void;
+    onFocusNarration?: (text: string) => void;
 }
 
 const FALLBACK_IMAGE_URLS = [
@@ -15,7 +16,7 @@ const FALLBACK_IMAGE_URLS = [
     "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=60",
 ];
 
-export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPress }) => {
+export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPress, onFocusNarration }) => {
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
     const safeName = restaurant.name || "Unnamed restaurant";
@@ -31,6 +32,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPr
     }, [safeImage]);
 
     const activeImage = imageCandidates[imageIndex] || "";
+    const cardNarration = `${safeName}. Rating ${restaurant.rating} out of 5. Accessibility features: ${safeFeatures.map((feature) => feature.label).join(", ") || "none listed"}.`;
 
     useEffect(() => {
         setImageIndex(0);
@@ -65,8 +67,9 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPr
             onPress={onPress}
             disabled={!onPress}
             accessibilityRole={onPress ? "button" : undefined}
-            accessibilityLabel={onPress ? `Open details for ${safeName}` : `${safeName} restaurant card`}
+            accessibilityLabel={cardNarration}
             accessibilityHint={onPress ? "Double tap to open the restaurant details" : undefined}
+            onFocus={() => onFocusNarration?.(cardNarration)}
         >
 
             {/* IMAGE */}
@@ -139,6 +142,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPr
                     onPress={handleDirections}
                     accessibilityRole="button"
                     accessibilityLabel={`Get directions to ${safeName}`}
+                    accessibilityHint="Open this restaurant in Google Maps"
                 >
                     <Text style={styles.actionButtonText}>Directions</Text>
                 </TouchableOpacity>

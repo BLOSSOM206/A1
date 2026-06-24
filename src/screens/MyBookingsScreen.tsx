@@ -1,15 +1,36 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, SafeAreaView, StyleSheet, Text } from 'react-native';
 import { Booking } from '../types/Booking';
 import { AppTheme, useTheme } from '../theme';
 import { getBookings, updateBookingStatus } from '../services/bookingsStore';
 import BookingCard from '../components/BookingCard';
+import { useScreenNarration } from '../hooks/useScreenNarration';
 
 export const MyBookingsScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [bookings, setBookings] = useState<Booking[] | null>(null);
+  const bookingSummary = useMemo(() => {
+    if (bookings === null) {
+      return 'Bookings are loading.';
+    }
+
+    if (bookings.length === 0) {
+      return 'No bookings yet. Make a reservation from Restaurants to see it here.';
+    }
+
+    const summaries = bookings
+      .slice(0, 3)
+      .map((booking) => `${booking.restaurantName} on ${booking.date} at ${booking.time}, for ${booking.guests} guests`);
+    return `${bookings.length} upcoming reservation${bookings.length === 1 ? '' : 's'}. ${summaries.join('. ')}. The I Am Here button notifies the restaurant that you have arrived.`;
+  }, [bookings]);
+
+  useScreenNarration({
+    title: 'My Bookings',
+    description: bookingSummary,
+    enabled: bookings !== null,
+  });
 
   const load = useCallback(async () => {
     console.log('[MyBookingsScreen] load bookings');

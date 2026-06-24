@@ -11,6 +11,8 @@ import {
 import { Restaurant } from "../types/Restaurant";
 import { Booking } from "../types/Booking";
 import { AppTheme, useTheme } from "../theme";
+import { useAccessibility } from "../context/AccessibilityContext";
+import { useScreenNarration } from "../hooks/useScreenNarration";
 
 type BookingScreenProps = {
   restaurant: Restaurant;
@@ -24,6 +26,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
   onConfirmBooking,
 }) => {
   const { theme } = useTheme();
+  const { speak } = useAccessibility();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -70,6 +73,20 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
     return date;
   });
 
+  useScreenNarration({
+    title: "Booking",
+    description: [
+      `You are booking a table at ${restaurant.name}.`,
+      `Selected date is ${dateText.trim() || formattedDate}.`,
+      selectedTime ? `Selected time is ${selectedTime}.` : "Choose a time slot.",
+      `Guest count is ${guests || "not set"}.`,
+      wheelchairSeating ? "Wheelchair seating is requested." : "",
+      sensoryFriendly ? "Sensory friendly seating is requested." : "",
+      `Communication preference is ${communicationPreference}.`,
+      "Confirm Booking completes the reservation.",
+    ],
+  });
+
   const handleConfirm = () => {
     const finalDate = dateText.trim() || formattedDate;
 
@@ -97,6 +114,10 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
       communicationPreference,
     };
 
+    speak(`Reservation confirmation. Booking ${restaurant.name} for ${guestCount} guests on ${finalDate} at ${selectedTime}.`, {
+      force: true,
+      key: "booking-confirmation",
+    }).catch(() => undefined);
     onConfirmBooking(booking);
   };
 
@@ -130,6 +151,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
           onPress={handleOpenDatePicker}
           accessibilityRole="button"
           accessibilityLabel="Select Date"
+          accessibilityHint="Show or hide quick date choices"
         >
           <Text style={styles.selectorText}>{showDatePicker ? "Hide Quick Dates" : "Show Quick Dates"}</Text>
         </TouchableOpacity>
@@ -151,6 +173,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={`Select ${label}`}
+                  accessibilityHint="Use this date for the reservation"
                 >
                   <Text style={styles.quickDateText}>{label}</Text>
                 </TouchableOpacity>
@@ -166,6 +189,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
           placeholderTextColor={theme.colors.textSubtle}
           style={[styles.input, styles.manualDateInput]}
           accessibilityLabel="Manual date input"
+          accessibilityHint="Enter a date manually if the quick dates are not suitable"
         />
       </View>
 
@@ -181,6 +205,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
                 onPress={() => setSelectedTime(slot)}
                 accessibilityRole="button"
                 accessibilityLabel={`Select time ${slot}`}
+                accessibilityHint="Use this time slot for the reservation"
                 accessibilityState={{ selected: isSelected }}
               >
                 <Text style={[styles.timeSlotText, isSelected ? styles.timeSlotTextSelected : null]}>
@@ -200,6 +225,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
           keyboardType="number-pad"
           style={styles.input}
           accessibilityLabel="Number of guests input"
+          accessibilityHint="Enter how many guests will attend"
           placeholder="2"
           placeholderTextColor={theme.colors.textSubtle}
         />
@@ -213,6 +239,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
           accessibilityRole="checkbox"
           accessibilityState={{ checked: wheelchairSeating }}
           accessibilityLabel="Request wheelchair seating"
+          accessibilityHint="Tell the restaurant to prepare wheelchair accessible seating"
         >
           <Text style={[styles.toggleText, wheelchairSeating ? styles.toggleTextSelected : null]}>Wheelchair seating</Text>
         </TouchableOpacity>
@@ -223,6 +250,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
           accessibilityRole="checkbox"
           accessibilityState={{ checked: sensoryFriendly }}
           accessibilityLabel="Request sensory friendly seating"
+          accessibilityHint="Tell the restaurant to prepare a calmer seating option"
         >
           <Text style={[styles.toggleText, sensoryFriendly ? styles.toggleTextSelected : null]}>Sensory-friendly seating</Text>
         </TouchableOpacity>
@@ -233,6 +261,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
           multiline
           style={[styles.input, styles.notesInput]}
           accessibilityLabel="Special assistance requests"
+          accessibilityHint="Describe support you need before arrival"
           placeholder="Tell staff what support you need before arrival"
           placeholderTextColor={theme.colors.textSubtle}
         />
@@ -248,6 +277,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
             accessibilityRole="radio"
             accessibilityState={{ checked: communicationPreference === option }}
             accessibilityLabel={option}
+            accessibilityHint="Choose how staff should communicate with you"
           >
             <Text style={[styles.preferenceText, communicationPreference === option ? styles.preferenceTextSelected : null]}>{option}</Text>
           </TouchableOpacity>
@@ -262,6 +292,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
           multiline
           style={[styles.input, styles.notesInput]}
           accessibilityLabel="Booking notes input"
+          accessibilityHint="Add any extra requests for restaurant staff"
           placeholder="Add any special requests"
           placeholderTextColor={theme.colors.textSubtle}
         />
@@ -272,6 +303,7 @@ export const BookingScreen: React.FC<BookingScreenProps> = ({
         onPress={handleConfirm}
         accessibilityRole="button"
         accessibilityLabel="Confirm booking"
+        accessibilityHint="Save this reservation and open the confirmation screen"
       >
         <Text style={styles.confirmButtonText}>Confirm Booking</Text>
       </TouchableOpacity>

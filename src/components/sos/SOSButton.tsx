@@ -137,7 +137,8 @@ export const SOSButton: React.FC<SOSButtonProps> = ({
           testID={testID}
           accessibilityRole="button"
           accessibilityLabel={isCountingDown ? `SOS countdown ${remainingSeconds} seconds` : 'SOS Emergency Button'}
-          accessibilityHint="Double tap to trigger emergency SOS"
+          accessibilityHint={isCountingDown ? 'Double tap to cancel the emergency countdown' : 'Double tap to start the emergency SOS countdown'}
+          accessibilityState={{ disabled }}
         >
           <View
             style={[

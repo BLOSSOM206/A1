@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useScreenNarration } from '../hooks/useScreenNarration';
 import { AppTheme, useTheme } from '../theme';
 
 type HomeScreenProps = {
@@ -40,6 +41,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  useScreenNarration({
+    title: 'Home',
+    description: [
+      'Welcome to A1 Clean.',
+      profileReady
+        ? 'Your emergency profile is ready.'
+        : 'Your emergency profile is not complete yet. Set it up before relying on SOS.',
+      'Quick actions are Browse Restaurants, Emergency Profile, Quick Notepad, and SOS.',
+      'Use the bottom tabs for Home, Restaurants, My Bookings, SOS, Notes, and Profile.',
+    ],
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -59,28 +71,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       ) : null}
 
       <View style={styles.grid}>
-        <Pressable style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]} onPress={onOpenRestaurants} accessibilityRole="button" accessibilityLabel="Open restaurant listings">
+        <Pressable style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]} onPress={onOpenRestaurants} accessibilityRole="button" accessibilityLabel="Open restaurant listings" accessibilityHint="Browse accessible restaurants and their details">
           <Text style={styles.cardTitle}>{actionCards[0].title}</Text>
           <Text style={styles.cardText}>{actionCards[0].subtitle}</Text>
         </Pressable>
 
-        <Pressable style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]} onPress={onOpenProfile} accessibilityRole="button" accessibilityLabel="Open emergency profile setup">
+        <Pressable style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]} onPress={onOpenProfile} accessibilityRole="button" accessibilityLabel="Open emergency profile setup" accessibilityHint="Edit profile and accessibility settings">
           <Text style={styles.cardTitle}>{actionCards[1].title}</Text>
           <Text style={styles.cardText}>{actionCards[1].subtitle}</Text>
         </Pressable>
 
-        <Pressable style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]} onPress={onOpenNotepad} accessibilityRole="button" accessibilityLabel="Open quick notepad">
+        <Pressable style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]} onPress={onOpenNotepad} accessibilityRole="button" accessibilityLabel="Open quick notepad" accessibilityHint="Open preset phrases, typed notes, and sketch pad">
           <Text style={styles.cardTitle}>{actionCards[2].title}</Text>
           <Text style={styles.cardText}>{actionCards[2].subtitle}</Text>
         </Pressable>
 
-        <Pressable style={({ pressed }) => [styles.card, styles.emergencyCard, pressed ? styles.pressed : null]} onPress={onOpenSOS} accessibilityRole="button" accessibilityLabel="Open SOS screen">
+        <Pressable style={({ pressed }) => [styles.card, styles.emergencyCard, pressed ? styles.pressed : null]} onPress={onOpenSOS} accessibilityRole="button" accessibilityLabel="Open SOS screen" accessibilityHint="Start the emergency assistance flow">
           <Text style={[styles.cardTitle, styles.emergencyTitle]}>{actionCards[3].title}</Text>
           <Text style={[styles.cardText, styles.emergencyText]}>{actionCards[3].subtitle}</Text>
         </Pressable>
       </View>
 
-      <Pressable style={({ pressed }) => [styles.logoutButton, pressed ? styles.pressed : null]} onPress={onLogout} accessibilityRole="button" accessibilityLabel="Log out">
+      <Pressable style={({ pressed }) => [styles.logoutButton, pressed ? styles.pressed : null]} onPress={onLogout} accessibilityRole="button" accessibilityLabel="Log out" accessibilityHint="Sign out of A1 Clean">
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
     </ScrollView>

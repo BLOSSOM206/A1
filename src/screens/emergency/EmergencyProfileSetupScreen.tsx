@@ -14,6 +14,9 @@ import { EmergencyProfile } from '../../types/Emergency';
 import { useEmergencyProfile } from '../../context/EmergencyProfileContext';
 import { AccessibilitySettings } from '../../components/settings/AccessibilitySettings';
 import { AppTheme, useTheme } from '../../theme';
+import { useAccessibility } from '../../context/AccessibilityContext';
+import { useScreenNarration } from '../../hooks/useScreenNarration';
+import { resetAppState } from '../../services/dev/resetAppState';
 
 type EmergencyProfileSetupScreenProps = {
   onDone?: () => void;
@@ -27,6 +30,7 @@ const splitList = (value: string) =>
 
 export const EmergencyProfileSetupScreen: React.FC<EmergencyProfileSetupScreenProps> = ({ onDone }) => {
   const { profile, setProfile, isLoading } = useEmergencyProfile();
+  const { needs, preferences } = useAccessibility();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [fullName, setFullName] = useState('');
@@ -58,6 +62,21 @@ export const EmergencyProfileSetupScreen: React.FC<EmergencyProfileSetupScreenPr
     () => (profile ? 'Update emergency profile' : 'Save emergency profile'),
     [profile],
   );
+
+  useScreenNarration({
+    title: 'Profile',
+    description: [
+      profile ? `Emergency profile for ${profile.fullName || 'you'} is saved.` : 'Emergency profile is not saved yet.',
+      'Sections include personal details, medical details, accessibility settings, and accessibility notes.',
+      needs.length > 0
+        ? `Enabled accessibility modes are ${needs.map((need) => need.replace(/([A-Z])/g, ' $1')).join(', ')}.`
+        : 'No accessibility modes are selected.',
+      `Dark mode is ${preferences.darkMode ? 'on' : 'off'}.`,
+      `Large text is ${preferences.largeText ? 'on' : 'off'}.`,
+      `Auto read aloud is ${preferences.autoReadScreens ? 'on' : 'off'}.`,
+    ],
+    enabled: !isLoading,
+  });
 
   const handleSave = async () => {
     const nextFullName = fullName.trim();
@@ -118,6 +137,26 @@ export const EmergencyProfileSetupScreen: React.FC<EmergencyProfileSetupScreenPr
     }
   };
 
+  const handleResetAppData = () => {
+    Alert.alert(
+      'Reset app data?',
+      'This clears all local data and reloads the app into a fresh state.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            resetAppState().catch((error) => {
+              const message = error instanceof Error ? error.message : 'Failed to reset app data';
+              Alert.alert('Reset failed', message);
+            });
+          },
+        },
+      ],
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -144,26 +183,26 @@ export const EmergencyProfileSetupScreen: React.FC<EmergencyProfileSetupScreenPr
           <Text style={styles.sectionTitle}>Personal Details</Text>
 
           <Text style={styles.label}>Full Name *</Text>
-          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Your full name" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Full name" />
+          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Your full name" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Full name" accessibilityHint="Enter the name responders should use" />
 
           <Text style={styles.label}>Emergency Contact Number *</Text>
-          <TextInput style={styles.input} value={emergencyContactNumber} onChangeText={setEmergencyContactNumber} placeholder="112 or your trusted contact" placeholderTextColor={theme.colors.textSubtle} keyboardType="phone-pad" accessibilityLabel="Emergency contact number" />
+          <TextInput style={styles.input} value={emergencyContactNumber} onChangeText={setEmergencyContactNumber} placeholder="112 or your trusted contact" placeholderTextColor={theme.colors.textSubtle} keyboardType="phone-pad" accessibilityLabel="Emergency contact number" accessibilityHint="Enter the number SOS should prepare for emergency contact" />
 
           <Text style={styles.label}>Address *</Text>
-          <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholder="Home address or current address" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Address" />
+          <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholder="Home address or current address" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Address" accessibilityHint="Enter an address responders may need" />
         </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Medical Details</Text>
 
           <Text style={styles.label}>Blood Group</Text>
-          <TextInput style={styles.input} value={bloodGroup} onChangeText={setBloodGroup} placeholder="e.g. O+, A-" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Blood group" />
+          <TextInput style={styles.input} value={bloodGroup} onChangeText={setBloodGroup} placeholder="e.g. O+, A-" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Blood group" accessibilityHint="Enter your blood group if known" />
 
           <Text style={styles.label}>Allergies</Text>
-          <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} placeholder="Comma-separated allergies" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Allergies" />
+          <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} placeholder="Comma-separated allergies" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Allergies" accessibilityHint="Enter allergies separated by commas" />
 
           <Text style={styles.label}>Medical Conditions</Text>
-          <TextInput style={styles.input} value={medicalConditions} onChangeText={setMedicalConditions} placeholder="Comma-separated conditions" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Medical conditions" />
+          <TextInput style={styles.input} value={medicalConditions} onChangeText={setMedicalConditions} placeholder="Comma-separated conditions" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Medical conditions" accessibilityHint="Enter medical conditions separated by commas" />
         </View>
 
         <AccessibilitySettings />
@@ -172,7 +211,7 @@ export const EmergencyProfileSetupScreen: React.FC<EmergencyProfileSetupScreenPr
           <Text style={styles.sectionTitle}>Accessibility Notes</Text>
 
           <Text style={styles.label}>Disability Type</Text>
-          <TextInput style={styles.input} value={disabilityType} onChangeText={setDisabilityType} placeholder="Optional" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Disability type" />
+          <TextInput style={styles.input} value={disabilityType} onChangeText={setDisabilityType} placeholder="Optional" placeholderTextColor={theme.colors.textSubtle} accessibilityLabel="Disability type" accessibilityHint="Enter any disability or support context responders should know" />
 
           <Text style={styles.label}>Optional Notes</Text>
           <TextInput
@@ -183,6 +222,7 @@ export const EmergencyProfileSetupScreen: React.FC<EmergencyProfileSetupScreenPr
             placeholderTextColor={theme.colors.textSubtle}
             multiline
             accessibilityLabel="Optional notes"
+            accessibilityHint="Add anything responders should know"
           />
         </View>
 
@@ -192,9 +232,22 @@ export const EmergencyProfileSetupScreen: React.FC<EmergencyProfileSetupScreenPr
           disabled={isSaving}
           accessibilityRole="button"
           accessibilityLabel={existingProfileLabel}
+          accessibilityHint="Save your emergency profile on this device"
         >
           <Text style={styles.saveButtonText}>{isSaving ? 'Saving...' : existingProfileLabel}</Text>
         </Pressable>
+
+        {__DEV__ ? (
+          <Pressable
+            style={({ pressed }) => [styles.resetButton, pressed ? styles.pressed : null]}
+            onPress={handleResetAppData}
+            accessibilityRole="button"
+            accessibilityLabel="Reset App Data"
+            accessibilityHint="Clear all stored app data and reload the app"
+          >
+            <Text style={styles.resetButtonText}>Reset App Data</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -216,6 +269,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   notesInput: { minHeight: 92, textAlignVertical: 'top', paddingTop: 12 },
   saveButton: { minHeight: 56, borderRadius: 16, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   saveButtonText: { color: theme.colors.primaryText, fontSize: 16, fontWeight: '800' },
+  resetButton: { minHeight: 56, borderRadius: 16, backgroundColor: theme.colors.danger, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  resetButtonText: { color: theme.colors.primaryText, fontSize: 16, fontWeight: '800' },
   pressed: { opacity: 0.92 },
   disabled: { opacity: 0.7 },
 });
